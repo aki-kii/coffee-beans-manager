@@ -1,4 +1,4 @@
-from tkinter import W
+from http.client import HTTPException
 from typing import List, Tuple, Optional
 
 from sqlalchemy import select
@@ -6,22 +6,22 @@ from sqlalchemy.engine import Result
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datetime import datetime, date
+from datetime import date
 
 import app.models.mybeans as mybeans_model
 import app.schemas.mybeans as mybeans_schema
 
 async def create_mybeans(
-    db: AsyncSession, grind_update: mybeans_schema.MybeansCreateRequest
+    db: AsyncSession, mybeans_create: mybeans_schema.MybeansCreateRequest
 ) -> mybeans_model.Mybeans:
-    mybeans = mybeans_model.Mybeans(**grind_update.dict())
+    mybeans = mybeans_model.Mybeans(**mybeans_create.dict())
     db.add(mybeans)
     await db.commit()
     await db.refresh(mybeans)
     return mybeans
 
 async def get_mybeans_with_beans(db: AsyncSession) -> List[Tuple[int, str, str, str, float, str, date, str, date, date]]:
-    result: Result = await (
+    result: Result = await(
         db.execute(
             select(
                 mybeans_model.Mybeans.id,
@@ -47,16 +47,26 @@ async def get_mybeans(db: AsyncSession, mybeans_id: int) -> Optional[mybeans_mod
     return mybeans[0] if mybeans is not None else None
 
 async def update_mybeans(
-    db: AsyncSession, mybeans_create: mybeans_schema.MybeansCreateRequest, original: mybeans_model.Mybeans
+    db: AsyncSession, mybeans_update: mybeans_schema.MybeansUpdateRequest, original: mybeans_model.Mybeans
 ) -> mybeans_model.Mybeans:
-    # original.update(dict(filter(lambda item: item[1] is not None, grind_update.items())))
-    if mybeans_create.beans_id is not None: original.beans_id = mybeans_create.beans_id
-    if mybeans_create.weight is not None: original.weight = mybeans_create.weight
-    if mybeans_create.roast_level is not None: original.roast_level = mybeans_create.roast_level
-    if mybeans_create.roasted_date is not None: original.roasted_date = mybeans_create.roasted_date
-    if mybeans_create.grind_size is not None: original.grind_size = mybeans_create.grind_size
-    if mybeans_create.grinded_date is not None: original.grinded_date = mybeans_create.grinded_date
-    if mybeans_create.got_date is not None: original.got_date = mybeans_create.got_date
+    if mybeans_update.beans_id is not None: original.beans_id = mybeans_update.beans_id
+    if mybeans_update.weight is not None: original.weight = mybeans_update.weight
+    if mybeans_update.roast_level is not None: original.roast_level = mybeans_update.roast_level
+    if mybeans_update.roasted_date is not None: original.roasted_date = mybeans_update.roasted_date
+    if mybeans_update.grind_size is not None: original.grind_size = mybeans_update.grind_size
+    if mybeans_update.grinded_date is not None: original.grinded_date = mybeans_update.grinded_date
+    if mybeans_update.got_date is not None: original.got_date = mybeans_update.got_date
+    db.add(original)
+    await db.commit()
+    await db.refresh(original)
+    return original
+
+async def update_weight(
+    db: AsyncSession, weight_update: mybeans_schema.WeightUpdateRequest, original: mybeans_model.Mybeans
+) -> mybeans_model.Mybeans:
+    if weight_update.use_weight <= original.weight:
+        original.weight -= weight_update.use_weight
+
     db.add(original)
     await db.commit()
     await db.refresh(original)
@@ -65,32 +75,3 @@ async def update_mybeans(
 async def delete_mybeans(db: AsyncSession, original: mybeans_model.Mybeans) -> None:
     await db.delete(original)
     await db.commit()
-
-async def update_weight(
-    db: AsyncSession, weight_update: mybeans_schema.WeightUpdateRequest, original: mybeans_model.Mybeans
-) -> mybeans_model.Mybeans:
-    if weight_update.use_weight > 0: original.weight -= weight_update.use_weight
-    db.add(original)
-    await db.commit()
-    await db.refresh(original)
-    return original
-
-async def update_roast(
-    db: AsyncSession, roast_update: mybeans_schema.RoastUpdateRequest, original: mybeans_model.Mybeans
-    ) -> mybeans_model.Mybeans:
-    if roast_update.roast_level is not None: original.roast_level = roast_update.roast_level
-    if roast_update.roasted_date is not None: original.roasted_date = roast_update.roasted_date
-    db.add(original)
-    await db.commit()
-    await db.refresh(original)
-    return original
-
-async def update_grind(
-    db: AsyncSession, grind_update: mybeans_schema.GrindUpdateRequest, original: mybeans_model.Mybeans
-    ) -> mybeans_model.Mybeans:
-    if grind_update.grind_size is not None: original.grind_size = grind_update.grind_size
-    if grind_update.grinded_date is not None: original.grinded_date = grind_update.grinded_date
-    db.add(original)
-    await db.commit()
-    await db.refresh(original)
-    return original

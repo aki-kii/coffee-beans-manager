@@ -1,12 +1,10 @@
 from fastapi import FastAPI
 
-from app.routers import mybeans, use, roast, grind
+from app.routers import beans, mybeans
 
 app = FastAPI()
 
 
-app = FastAPI()
+# routing
+app.include_router(beans.router)
 app.include_router(mybeans.router)
-app.include_router(use.router)
-app.include_router(roast.router)
-app.include_router(grind.router)
